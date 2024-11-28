@@ -1,0 +1,43 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $addFields: {
+        myTags: { $split: ['$Tags', ','] }
+      }
+    },
+    {
+      $addFields: {
+        myTrimTags: {
+          $map: {
+            input: '$myTags',
+            as: 'item',
+            in: { $trim: { input: '$$item' } }
+          }
+        }
+      }
+    },
+    {
+      $unwind: {
+        path: '$myTrimTags',
+        preserveNullAndEmptyArrays: false
+      }
+    },
+    {
+      $group: {
+        _id: '$myTrimTags',
+        animeCount: { $sum: 1 }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        myTag: '$_id',
+        animeCount: 1
+      }
+    },
+    { $sort: { animeCount: -1 } }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);

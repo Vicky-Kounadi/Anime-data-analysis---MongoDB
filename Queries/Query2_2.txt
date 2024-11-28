@@ -1,0 +1,23 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $addFields: {
+        tagCount: {
+          $size: { $split: [{ $ifNull: ["$Tags", ""] }, ","] }
+        }
+      }
+    },
+    {
+      $project: {
+        Name: 1,
+        Rank: 1,
+        Rating: 1,
+        tagCount: 1
+      }
+    },
+    { $sort: { Rating: -1 } }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);

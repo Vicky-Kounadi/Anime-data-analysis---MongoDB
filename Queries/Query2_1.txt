@@ -1,0 +1,24 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $filter: {
+        Studio: 'Studio Ghibli'
+      }
+    },
+    {
+      $project: {
+        Rank: 1,
+        Name: 1,
+        Release_year: 1,
+        Type: 1,
+        Tags: 1,
+        Rating: 1,
+        Content_Warning: 1
+      }
+    },
+    { $sort: { Release_year: 1 } }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);

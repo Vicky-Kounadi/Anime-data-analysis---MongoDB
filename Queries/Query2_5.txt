@@ -1,0 +1,99 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $addFields: {
+        staffArray: { $split: ['$staff', ','] }
+      }
+    },
+    {
+      $addFields: {
+        characterDesigners: {
+          $filter: {
+            input: '$staffArray',
+            as: 'item',
+            cond: {
+              $regexMatch: {
+                input: '$$item',
+                regex: 'Character Design'
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        characterDesignerName: {
+          $map: {
+            input: '$characterDesigners',
+            as: 'designer',
+            in: {
+              $trim: {
+                input: {
+                  $arrayElemAt: [
+                    {
+                      $split: ['$$designer', ':']
+                    },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      $unwind: { path: '$characterDesignerName' }
+    },
+    {
+      $group: {
+        _id: {
+          designer: '$characterDesignerName',
+          mystudio: '$Studio'
+        },
+        avgRating: { $avg: '$Rating' },
+        animeCount: { $sum: 1 }
+      }
+    },
+    {
+      $group: {
+        _id: '$_id.designer',
+        mystudios: {
+          $push: {
+            mystudio: '$_id.mystudio',
+            avgRating: '$avgRating',
+            animeCount: '$animeCount'
+          }
+        },
+        totalAnimeCount: { $sum: '$animeCount' },
+        studioCount: { $sum: 1 }
+      }
+    },
+    {
+      $addFields: {
+        countTotalAnime: '$totalAnimeCount',
+        countTotalStudio: '$studioCount',
+        myGroup: {
+          addToSet: '$mystudios.mystudio'
+        },
+        myGroupRatings: {
+          addToSet: '$mystudios.avgRating'
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        countTotalAnime: 1,
+        myGroup: 1,
+        myGroupRatings: 1,
+        countTotalStudio: 1
+      }
+    },
+    { $sort: { countTotalAnime: -1 } }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);

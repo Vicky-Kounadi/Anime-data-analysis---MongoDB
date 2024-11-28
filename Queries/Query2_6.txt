@@ -1,0 +1,75 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $addFields: {
+        relatedAnimeArray: {
+          $split: ['$Related_anime', ',']
+        }
+      }
+    },
+    {
+      $addFields: {
+        relatedAnime: {
+          $map: {
+            input: '$relatedAnimeArray',
+            as: 'item',
+            in: { $trim: { input: '$$item' } }
+          }
+        }
+      }
+    },
+    { $unwind: { path: '$relatedAnime' } },
+    {
+      $group: {
+        _id: '$relatedAnime',
+        animeData: {
+          $push: {
+            title: '$Name',
+            numEpisodes: '$Episodes',
+            numRating: '$Rating',
+            startYear: '$Release_year',
+            endYear: '$End_year'
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        countAnime: { $size: '$animeData' },
+        myGroup: { addToSet: '$animeData.title' },
+        avgEpisodes: {
+          $trunc: [
+            { $avg: '$animeData.numEpisodes' },
+            3
+          ]
+        },
+        avgRating: {
+          $trunc: [
+            { $avg: '$animeData.numRating' },
+            3
+          ]
+        },
+        duration: {
+          $subtract: [
+            { $max: '$animeData.endYear' },
+            { $min: '$animeData.startYear' }
+          ]
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        myGroup: 1,
+        countAnime: 1,
+        avgEpisodes: 1,
+        avgRating: 1,
+        maxMinDuration: '$duration'
+      }
+    },
+    { $sort: { countAnime: -1 } }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);

@@ -1,0 +1,21 @@
+db.getCollection(
+  'Anime Statistics and Metadata'
+).aggregate(
+  [
+    {
+      $group: {
+        _id: '$Studio',
+        avgEpisodes: { $avg: '$Episodes' },
+        avgRating: { $avg: '$Rating' }
+      }
+    },
+    {
+      $project: {
+        Studio: 1,
+        avgEpisodes: 1,
+        avgRating: 1
+      }
+    }
+  ],
+  { maxTimeMS: 60000, allowDiskUse: true }
+);
